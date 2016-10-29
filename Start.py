@@ -1,31 +1,31 @@
 from Tkinter import *
 import random
 import threading
-import pyHook
-import pythoncom
-import msvcrt
+
 
 WIDTH = 500
 HEIGHT = 500
 BOUND_X = 10
 BOUND_Y = 10
-
 DIRECT = "Right"
+REVERSE = {"Up": "Down", "Down": "Up", "Left": "Right", "Right": "Left"}
+
 
 class Snake:
     def __init__(self, canvas):
         self.canvas_ = canvas
-        self.head = Node(self.canvas_, 20, 0)
-        self.node = Node(self.canvas_, 10, 0)
-        self.tail = Node(self.canvas_, 0, 0)
+        self.head = Node(self.canvas_, 20, 250)
+        self.node = Node(self.canvas_, 10, 250)
+        self.tail = Node(self.canvas_, 0, 250)
         self.head.next = self.node
         self.node.prev = self.head
         self.node.next = self.tail
         self.tail.prev = self.node
 
     def move(self):
+        d_x, d_y = self.getDirect()
         tmp = self.tail.prev
-        self.tail.moveTo(self.head.x + 10, self.head.y)
+        self.tail.moveTo(self.head.x + d_x, self.head.y + d_y)
         self.tail.prev = None
         self.tail.next = self.head
         self.head.prev = self.tail
@@ -34,10 +34,19 @@ class Snake:
         self.tail.next = None
         print DIRECT
         global t
-        if self.head.x < 470:
+        if self.head.x in range(10, 470) and self.head.y in range(10, 470):
             t = threading.Timer(0.7, self.move)
             t.start()
-        print "END"
+
+    def getDirect(self):
+        if DIRECT == "Up":
+            return 0, -10
+        if DIRECT == "Down":
+            return 0, 10
+        if DIRECT == "Left":
+            return -10, 0
+        if DIRECT == "Right":
+            return 10, 0
 
 
 class Node:
@@ -86,60 +95,25 @@ class Start:
 
         self.randomFood()
 
-
     def randomFood(self):
-        self.x_food = random.randint(0, 48) * 10
-        self.y_food = random.randint(0, 48) * 10
-        self.food = Node(canvas_=self._canvas, x_=self.x_food, y_=self.y_food)
-
-    # def getDirect(self):
-    #     while True:
-    #         key1 = msvcrt.getch()
-    #         print ord(key1)
-    #         if ord(key1) == '\xe0':
-    #             key2 = msvcrt.getch()
-    #             DIRECT = "Down"
-    #             print ord(key2)
-
-    def OnKeyboardEvent(event):
-        print 'MessageName:', event.MessageName
-        print 'Message:', event.Message
-        print 'Time:', event.Time
-        print 'Window:', event.Window
-        print 'WindowName:', event.WindowName
-        print 'Ascii:', event.Ascii, chr(event.Ascii)
-        print 'Key:', event.Key
-        print 'KeyID:', event.KeyID
-        print 'ScanCode:', event.ScanCode
-        print 'Extended:', event.Extended
-        print 'Injected:', event.Injected
-        print 'Alt', event.Alt
-        print 'Transition', event.Transition
-        print '---'
-
-        if event.Key == "Left" or event.Key == "Right" or event.Key == "Down" or event.Key == "Up":
-            DIRECT = event.Key
-
-        # return True to pass the event to other handlers
-        return True
-
-    def getDirect(self):
-        # create a hook manager
-        hm = pyHook.HookManager()
-        # watch for all mouse events
-        hm.KeyDown = self.OnKeyboardEvent
-        # set the hook
-        hm.HookKeyboard()
-        # wait forever
-        pythoncom.PumpMessages()
+        x_food = random.randint(0, 48) * 10
+        y_food = random.randint(0, 48) * 10
+        self.food = Node(canvas_=self._canvas, x_=x_food, y_=y_food)
 
     def __init__(self, master=None):
         self._root = master
         self._canvas = Canvas(master, width=WIDTH, height=HEIGHT)
         self._canvas.pack()
-        t = threading.Timer(0.1, self.getDirect)
-        t.start()
+        self._root.bind_all("<Key>", key)
         self.background()
+
+
+def key(event):
+    global DIRECT
+    if event.keysym != REVERSE[DIRECT]:
+        DIRECT = event.keysym
+    print "key", event.keysym
+
 
 root = Tk()
 startDesk = Start(master=root)
