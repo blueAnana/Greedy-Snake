@@ -24,6 +24,9 @@ class Snake:
 
     def move(self):
         d_x, d_y = self.getDirect()
+        if self.head.x + d_x == FOOD.x and self.head.y + d_y == FOOD.y:
+            self.eatFood()
+
         tmp = self.tail.prev
         self.tail.moveTo(self.head.x + d_x, self.head.y + d_y)
         self.tail.prev = None
@@ -32,11 +35,18 @@ class Snake:
         self.head = self.tail
         self.tail = tmp
         self.tail.next = None
+
         print DIRECT
         global t
         if self.head.x in range(10, 470) and self.head.y in range(10, 470):
             t = threading.Timer(0.7, self.move)
             t.start()
+
+    def eatFood(self):
+        self.head.prev = FOOD
+        FOOD.next = self.head
+        self.head = FOOD
+        randomFood(self.canvas_)
 
     def getDirect(self):
         if DIRECT == "Up":
@@ -50,7 +60,7 @@ class Snake:
 
 
 class Node:
-    def __init__(self, canvas_, x_, y_):
+    def __init__(self, canvas_=None, x_=0, y_=0):
         self.canvas = canvas_
         self.x = x_
         self.y = y_
@@ -93,12 +103,7 @@ class Start:
         t = threading.Timer(0.7, self.snake.move)
         t.start()
 
-        self.randomFood()
-
-    def randomFood(self):
-        x_food = random.randint(0, 48) * 10
-        y_food = random.randint(0, 48) * 10
-        self.food = Node(canvas_=self._canvas, x_=x_food, y_=y_food)
+        randomFood(self._canvas)
 
     def __init__(self, master=None):
         self._root = master
@@ -108,6 +113,12 @@ class Start:
         self.background()
 
 
+def randomFood(canvas):
+    global FOOD
+    x_food = random.randint(0, 48) * 10
+    y_food = random.randint(0, 48) * 10
+    FOOD = Node(canvas_=canvas, x_=x_food, y_=y_food)
+
 def key(event):
     global DIRECT
     if event.keysym != REVERSE[DIRECT]:
@@ -115,6 +126,7 @@ def key(event):
     print "key", event.keysym
 
 
+FOOD = None
 root = Tk()
 startDesk = Start(master=root)
 root.mainloop()
