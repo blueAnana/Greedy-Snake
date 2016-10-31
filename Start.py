@@ -1,6 +1,7 @@
 from Tkinter import *
 import random
 import threading
+import tkMessageBox
 
 
 WIDTH = 500
@@ -9,6 +10,9 @@ BOUND_X = 10
 BOUND_Y = 10
 DIRECT = "Right"
 REVERSE = {"Up": "Down", "Down": "Up", "Left": "Right", "Right": "Left"}
+FOOD = None
+SCORE = 0
+NODE_MATRIX = [[0 for i in range(48)] for i in range(48)]
 
 
 class Snake:
@@ -21,28 +25,41 @@ class Snake:
         self.node.prev = self.head
         self.node.next = self.tail
         self.tail.prev = self.node
+        NODE_MATRIX[0][0] = 1
+        NODE_MATRIX[1][0] = 1
+        NODE_MATRIX[2][0] = 1
 
     def move(self):
+        # hit the wall
+        if self.head.x == 0 and DIRECT == "Left" or self.head.x == 470 and DIRECT == "Right"or self.head.y == 0 and DIRECT == "Up" or self.head.y == 470 and DIRECT == "Down":
+            gameOver()
+
         d_x, d_y = self.getDirect()
         if self.head.x + d_x == FOOD.x and self.head.y + d_y == FOOD.y:
             self.eatFood()
-
-        tmp = self.tail.prev
-        self.tail.moveTo(self.head.x + d_x, self.head.y + d_y)
-        self.tail.prev = None
-        self.tail.next = self.head
-        self.head.prev = self.tail
-        self.head = self.tail
-        self.tail = tmp
-        self.tail.next = None
+        if NODE_MATRIX[(self.head.x + d_x)/10][(self.head.y + d_y)/10] != 1:
+            NODE_MATRIX[self.tail.x/10][self.tail.y/10] = 0
+            tmp = self.tail.prev
+            self.tail.moveTo(self.head.x + d_x, self.head.y + d_y)
+            self.tail.prev = None
+            self.tail.next = self.head
+            self.head.prev = self.tail
+            self.head = self.tail
+            self.tail = tmp
+            self.tail.next = None
+            NODE_MATRIX[self.head.x/10][self.head.y/10] = 1
+        else:
+            gameOver()
 
         print DIRECT
         global t
-        if self.head.x in range(10, 470) and self.head.y in range(10, 470):
-            t = threading.Timer(0.7, self.move)
+        if self.head.x in range(0, 470) and self.head.y in range(0, 470):
+            t = threading.Timer((100 - SCORE)*0.01, self.move)
             t.start()
 
     def eatFood(self):
+        global SCORE
+        SCORE += 10
         self.head.prev = FOOD
         FOOD.next = self.head
         self.head = FOOD
@@ -115,9 +132,11 @@ class Start:
 
 def randomFood(canvas):
     global FOOD
-    x_food = random.randint(0, 48) * 10
-    y_food = random.randint(0, 48) * 10
+    x_food = random.randint(0, 47) * 10
+    y_food = random.randint(0, 47) * 10
+    print x_food, y_food
     FOOD = Node(canvas_=canvas, x_=x_food, y_=y_food)
+
 
 def key(event):
     global DIRECT
@@ -126,7 +145,10 @@ def key(event):
     print "key", event.keysym
 
 
-FOOD = None
+def gameOver():
+    tkMessageBox.showinfo("END", "GAME OVER")
+
+
 root = Tk()
 startDesk = Start(master=root)
 root.mainloop()
