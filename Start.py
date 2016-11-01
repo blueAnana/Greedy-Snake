@@ -1,7 +1,6 @@
 from Tkinter import *
 import random
 import threading
-import tkMessageBox
 
 
 WIDTH = 500
@@ -29,10 +28,11 @@ class Snake:
         NODE_MATRIX[1][0] = 1
         NODE_MATRIX[2][0] = 1
 
-    def move(self):
+    def move(self, gameOver):
         # hit the wall
-        if self.head.x == 0 and DIRECT == "Left" or self.head.x == 470 and DIRECT == "Right"or self.head.y == 0 and DIRECT == "Up" or self.head.y == 470 and DIRECT == "Down":
-            gameOver()
+        if self.head.x == 0 and DIRECT == "Left" or self.head.x == 470 and DIRECT == "Right"or self.head.y == 0 and \
+                        DIRECT == "Up" or self.head.y == 470 and DIRECT == "Down":
+            return gameOver()
 
         d_x, d_y = self.getDirect()
         if self.head.x + d_x == FOOD.x and self.head.y + d_y == FOOD.y:
@@ -49,12 +49,12 @@ class Snake:
             self.tail.next = None
             NODE_MATRIX[self.head.x/10][self.head.y/10] = 1
         else:
-            gameOver()
+            return gameOver()
 
         print DIRECT
         global t
         if self.head.x in range(0, 470) and self.head.y in range(0, 470):
-            t = threading.Timer((100 - SCORE)*0.01, self.move)
+            t = threading.Timer((100 - SCORE)*0.01, self.move, [gameOver])
             t.start()
 
     def eatFood(self):
@@ -117,10 +117,16 @@ class Start:
         self._canvas.create_rectangle(10, 10, 490, 490, fill='#fff')
         self.snake = Snake(canvas=self._canvas)
 
-        t = threading.Timer(0.7, self.snake.move)
+        t = threading.Timer(0.7, self.snake.move, [self.gameOver])
         t.start()
-
         randomFood(self._canvas)
+
+    def gameOver(self):
+        self._canvas.create_text(WIDTH / 2, 150, text="GAME OVER!")
+        start_button = Button(self._canvas, text="Restart", command=self.newGame)
+        self._canvas.create_window(200, 250, window=start_button)
+        exit_button = Button(self._canvas, text="Exit", command=self._root.quit)
+        self._canvas.create_window(300, 250, window=exit_button)
 
     def __init__(self, master=None):
         self._root = master
@@ -143,10 +149,6 @@ def key(event):
     if event.keysym != REVERSE[DIRECT]:
         DIRECT = event.keysym
     print "key", event.keysym
-
-
-def gameOver():
-    tkMessageBox.showinfo("END", "GAME OVER")
 
 
 root = Tk()
