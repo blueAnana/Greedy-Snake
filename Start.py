@@ -7,10 +7,8 @@ WIDTH = 500
 HEIGHT = 500
 BOUND_X = 10
 BOUND_Y = 10
-DIRECT = "Right"
 REVERSE = {"Up": "Down", "Down": "Up", "Left": "Right", "Right": "Left"}
 FOOD = None
-SCORE = 0
 NODE_MATRIX = [[0 for i in range(48)] for i in range(48)]
 
 
@@ -27,14 +25,17 @@ class Snake:
         NODE_MATRIX[0][0] = 1
         NODE_MATRIX[1][0] = 1
         NODE_MATRIX[2][0] = 1
+        self.direct = "Right"
+        self.score = 0
 
     def move(self, gameOver):
+        d_x, d_y = self.getDirect()
+
         # hit the wall
-        if self.head.x == 0 and DIRECT == "Left" or self.head.x == 470 and DIRECT == "Right"or self.head.y == 0 and \
-                        DIRECT == "Up" or self.head.y == 470 and DIRECT == "Down":
+        if self.head.x == 0 and self.direct == "Left" or self.head.x == 470 and self.direct == "Right"or self.head.y == 0 and \
+                        self.direct == "Up" or self.head.y == 470 and self.direct == "Down":
             return gameOver()
 
-        d_x, d_y = self.getDirect()
         if self.head.x + d_x == FOOD.x and self.head.y + d_y == FOOD.y:
             self.eatFood()
         if NODE_MATRIX[(self.head.x + d_x)/10][(self.head.y + d_y)/10] != 1:
@@ -51,28 +52,27 @@ class Snake:
         else:
             return gameOver()
 
-        print DIRECT
+        print self.direct
         global t
         if self.head.x in range(0, 470) and self.head.y in range(0, 470):
-            t = threading.Timer((100 - SCORE)*0.01, self.move, [gameOver])
+            t = threading.Timer((100 - self.score)*0.01, self.move, [gameOver])
             t.start()
 
     def eatFood(self):
-        global SCORE
-        SCORE += 10
+        self.score += 10
         self.head.prev = FOOD
         FOOD.next = self.head
         self.head = FOOD
         randomFood(self.canvas_)
 
     def getDirect(self):
-        if DIRECT == "Up":
+        if self.direct == "Up":
             return 0, -10
-        if DIRECT == "Down":
+        if self.direct == "Down":
             return 0, 10
-        if DIRECT == "Left":
+        if self.direct == "Left":
             return -10, 0
-        if DIRECT == "Right":
+        if self.direct == "Right":
             return 10, 0
 
 
@@ -116,6 +116,7 @@ class Start:
         # Draw the bounding wall
         self._canvas.create_rectangle(10, 10, 490, 490, fill='#fff')
         self.snake = Snake(canvas=self._canvas)
+        self._root.bind_all("<Key>", self.key)
 
         t = threading.Timer(0.7, self.snake.move, [self.gameOver])
         t.start()
@@ -127,12 +128,17 @@ class Start:
         self._canvas.create_window(200, 250, window=start_button)
         exit_button = Button(self._canvas, text="Exit", command=self._root.quit)
         self._canvas.create_window(300, 250, window=exit_button)
+        self._root.unbind("<Key")
+
+    def key(self, event):
+        if event.keysym != REVERSE[self.snake.direct]:
+            self.snake.direct = event.keysym
+        print "key", event.keysym
 
     def __init__(self, master=None):
         self._root = master
         self._canvas = Canvas(master, width=WIDTH, height=HEIGHT)
         self._canvas.pack()
-        self._root.bind_all("<Key>", key)
         self.background()
 
 
@@ -142,13 +148,6 @@ def randomFood(canvas):
     y_food = random.randint(0, 47) * 10
     print x_food, y_food
     FOOD = Node(canvas_=canvas, x_=x_food, y_=y_food)
-
-
-def key(event):
-    global DIRECT
-    if event.keysym != REVERSE[DIRECT]:
-        DIRECT = event.keysym
-    print "key", event.keysym
 
 
 root = Tk()
