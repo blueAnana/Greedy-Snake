@@ -7,6 +7,7 @@ WIDTH = 500
 HEIGHT = 500
 BOUND_X = 10
 BOUND_Y = 10
+SPEED = 0.2
 REVERSE = {"Up": "Down", "Down": "Up", "Left": "Right", "Right": "Left"}
 FOOD = None
 NODE_MATRIX = [[0 for i in range(48)] for i in range(48)]
@@ -22,9 +23,10 @@ class Snake:
         self.node.prev = self.head
         self.node.next = self.tail
         self.tail.prev = self.node
-        NODE_MATRIX[0][0] = 1
-        NODE_MATRIX[1][0] = 1
-        NODE_MATRIX[2][0] = 1
+        global NODE_MATRIX
+        NODE_MATRIX[0][25] = 1
+        NODE_MATRIX[1][25] = 1
+        NODE_MATRIX[2][25] = 1
         self.direct = "Right"
         self.score = 0
 
@@ -32,8 +34,9 @@ class Snake:
         d_x, d_y = self.getDirect()
 
         # hit the wall
-        if self.head.x == 0 and self.direct == "Left" or self.head.x == 470 and self.direct == "Right"or self.head.y == 0 and \
-                        self.direct == "Up" or self.head.y == 470 and self.direct == "Down":
+        if self.head.x == 0 and self.direct == "Left" or self.head.x == 470 and self.direct == "Right"\
+                or self.head.y == 0 and self.direct == "Up" or self.head.y == 470 and self.direct == "Down":
+            print self.head.x, self.head.y
             return gameOver()
 
         if self.head.x + d_x == FOOD.x and self.head.y + d_y == FOOD.y:
@@ -49,13 +52,13 @@ class Snake:
             self.tail = tmp
             self.tail.next = None
             NODE_MATRIX[self.head.x/10][self.head.y/10] = 1
-        else:
+        else:  # hit self-node
             return gameOver()
 
-        print self.direct
         global t
-        if self.head.x in range(0, 470) and self.head.y in range(0, 470):
-            t = threading.Timer((100 - self.score)*0.01, self.move, [gameOver])
+        if self.head.x in range(0, 480) and self.head.y in range(0, 480):
+            # t = threading.Timer((100 - self.score)*0.01, self.move, [gameOver])
+            t = threading.Timer(SPEED, self.move, [gameOver])
             t.start()
 
     def eatFood(self):
@@ -94,8 +97,12 @@ class Node:
         self.x = toX
         self.y = toY
         self.canvas.delete(self.node)
-        self.node = self.canvas.create_rectangle(BOUND_X + self.x, BOUND_Y + self.y,
+        try:
+            self.node = self.canvas.create_rectangle(BOUND_X + self.x, BOUND_Y + self.y,
                                                  BOUND_X + self.x + 10, BOUND_Y + self.y + 10, fill="#000")
+        except ValueError:
+            self.node = self.canvas.create_rectangle(BOUND_X + self.x, BOUND_Y + self.y,
+                                                     BOUND_X + self.x + 10, BOUND_Y + self.y + 10, fill="#000")
 
 
 class Start:
@@ -118,7 +125,7 @@ class Start:
         self.snake = Snake(canvas=self._canvas)
         self._root.bind_all("<Key>", self.key)
 
-        t = threading.Timer(0.7, self.snake.move, [self.gameOver])
+        t = threading.Timer(0.5, self.snake.move, [self.gameOver])
         t.start()
         randomFood(self._canvas)
 
@@ -133,7 +140,6 @@ class Start:
     def key(self, event):
         if event.keysym != REVERSE[self.snake.direct]:
             self.snake.direct = event.keysym
-        print "key", event.keysym
 
     def __init__(self, master=None):
         self._root = master
@@ -143,10 +149,12 @@ class Start:
 
 
 def randomFood(canvas):
-    global FOOD
-    x_food = random.randint(0, 47) * 10
-    y_food = random.randint(0, 47) * 10
-    print x_food, y_food
+    global FOOD, NODE_MATRIX
+    while True:
+        x_food = random.randint(0, 47) * 10
+        y_food = random.randint(0, 47) * 10
+        if NODE_MATRIX[x_food/10][y_food/10] != 1:
+            break
     FOOD = Node(canvas_=canvas, x_=x_food, y_=y_food)
 
 
