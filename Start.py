@@ -23,7 +23,6 @@ class Snake:
         self.node.prev = self.head
         self.node.next = self.tail
         self.tail.prev = self.node
-        global NODE_MATRIX
         NODE_MATRIX[0][25] = 1
         NODE_MATRIX[1][25] = 1
         NODE_MATRIX[2][25] = 1
@@ -32,6 +31,10 @@ class Snake:
 
     def move(self, gameOver):
         d_x, d_y = self.getDirect()
+        if self.head.x + d_x == FOOD.x and self.head.y + d_y == FOOD.y:
+            self.eatFood()
+
+        d_x, d_y = self.getDirect()
 
         # hit the wall
         if self.head.x == 0 and self.direct == "Left" or self.head.x == 470 and self.direct == "Right"\
@@ -39,10 +42,8 @@ class Snake:
             print self.head.x, self.head.y
             return gameOver()
 
-        if self.head.x + d_x == FOOD.x and self.head.y + d_y == FOOD.y:
-            self.eatFood()
-        if NODE_MATRIX[(self.head.x + d_x)/10][(self.head.y + d_y)/10] != 1:
-            NODE_MATRIX[self.tail.x/10][self.tail.y/10] = 0
+        if NODE_MATRIX[(self.head.x + d_x) / 10][(self.head.y + d_y) / 10] != 1:
+            NODE_MATRIX[self.tail.x / 10][self.tail.y / 10] = 0
             tmp = self.tail.prev
             self.tail.moveTo(self.head.x + d_x, self.head.y + d_y)
             self.tail.prev = None
@@ -51,13 +52,12 @@ class Snake:
             self.head = self.tail
             self.tail = tmp
             self.tail.next = None
-            NODE_MATRIX[self.head.x/10][self.head.y/10] = 1
         else:  # hit self-node
             return gameOver()
+        NODE_MATRIX[self.head.x / 10][self.head.y / 10] = 1
 
         global t
         if self.head.x in range(0, 480) and self.head.y in range(0, 480):
-            # t = threading.Timer((100 - self.score)*0.01, self.move, [gameOver])
             t = threading.Timer(SPEED, self.move, [gameOver])
             t.start()
 
@@ -96,13 +96,8 @@ class Node:
     def moveTo(self, toX, toY):
         self.x = toX
         self.y = toY
-        self.canvas.delete(self.node)
-        try:
-            self.node = self.canvas.create_rectangle(BOUND_X + self.x, BOUND_Y + self.y,
-                                                 BOUND_X + self.x + 10, BOUND_Y + self.y + 10, fill="#000")
-        except ValueError:
-            self.node = self.canvas.create_rectangle(BOUND_X + self.x, BOUND_Y + self.y,
-                                                     BOUND_X + self.x + 10, BOUND_Y + self.y + 10, fill="#000")
+        self.canvas.coords(self.node, BOUND_X + self.x, BOUND_Y + self.y, BOUND_X + self.x + 10, BOUND_Y + self.y + 10)
+        self.canvas.itemconfig(self.node)
 
 
 class Start:
@@ -122,6 +117,9 @@ class Start:
         self._canvas.delete("all")
         # Draw the bounding wall
         self._canvas.create_rectangle(10, 10, 490, 490, fill='#fff')
+        for x in range(48):
+            for y in range(48):
+                NODE_MATRIX[x][y] = 0
         self.snake = Snake(canvas=self._canvas)
         self._root.bind_all("<Key>", self.key)
 
@@ -131,6 +129,7 @@ class Start:
 
     def gameOver(self):
         self._canvas.create_text(WIDTH / 2, 150, text="GAME OVER!")
+        self._canvas.create_text(WIDTH / 2, 170, text=self.snake.score)
         start_button = Button(self._canvas, text="Restart", command=self.newGame)
         self._canvas.create_window(200, 250, window=start_button)
         exit_button = Button(self._canvas, text="Exit", command=self._root.quit)
