@@ -7,10 +7,11 @@ WIDTH = 500
 HEIGHT = 500
 BOUND_X = 10
 BOUND_Y = 10
-SPEED = 0.2
+SPEED = 250
 REVERSE = {"Up": "Down", "Down": "Up", "Left": "Right", "Right": "Left"}
 FOOD = None
 NODE_MATRIX = [[0 for i in range(48)] for i in range(48)]
+COLOR = {'BLACK': '#000000', 'RED': '#FF0000'}
 
 
 class Snake:
@@ -56,13 +57,12 @@ class Snake:
             return gameOver()
         NODE_MATRIX[self.head.x / 10][self.head.y / 10] = 1
 
-        global t
         if self.head.x in range(0, 480) and self.head.y in range(0, 480):
-            t = threading.Timer(SPEED, self.move, [gameOver])
-            t.start()
+            self.canvas_.after(SPEED, self.move, gameOver)
 
     def eatFood(self):
         self.score += 10
+        FOOD.changeColor()
         self.head.prev = FOOD
         FOOD.next = self.head
         self.head = FOOD
@@ -80,14 +80,15 @@ class Snake:
 
 
 class Node:
-    def __init__(self, canvas_=None, x_=0, y_=0):
+    def __init__(self, canvas_=None, x_=0, y_=0, color_=COLOR['BLACK']):
         self.canvas = canvas_
         self.x = x_
         self.y = y_
+        self.color = color_
         self.next = None
         self.prev = None
         self.node = self.canvas.create_rectangle(BOUND_X + self.x, BOUND_Y + self.y,
-                                                 BOUND_X + self.x + 10, BOUND_Y + self.y + 10, fill="#000")
+                                                 BOUND_X + self.x + 10, BOUND_Y + self.y + 10, fill=self.color)
 
     def snakeMove(self, speed, toX , toY):
         self.canvas.move(self.node, toX, toY)
@@ -99,6 +100,8 @@ class Node:
         self.canvas.coords(self.node, BOUND_X + self.x, BOUND_Y + self.y, BOUND_X + self.x + 10, BOUND_Y + self.y + 10)
         self.canvas.itemconfig(self.node)
 
+    def changeColor(self):
+        self.canvas.itemconfig(self.node, fill=COLOR['BLACK'])
 
 class Start:
     def background(self):
@@ -123,8 +126,7 @@ class Start:
         self.snake = Snake(canvas=self._canvas)
         self._root.bind_all("<Key>", self.key)
 
-        t = threading.Timer(0.5, self.snake.move, [self.gameOver])
-        t.start()
+        self._canvas.after(1, self.snake.move, self.gameOver)
         randomFood(self._canvas)
 
     def gameOver(self):
@@ -154,7 +156,7 @@ def randomFood(canvas):
         y_food = random.randint(0, 47) * 10
         if NODE_MATRIX[x_food/10][y_food/10] != 1:
             break
-    FOOD = Node(canvas_=canvas, x_=x_food, y_=y_food)
+    FOOD = Node(canvas_=canvas, x_=x_food, y_=y_food, color_=COLOR['RED'])
 
 
 root = Tk()
